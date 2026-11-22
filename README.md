@@ -26,11 +26,17 @@ Node.js + Express.js + MySQL Web Application for managing Items, Item Types, Pur
 - VS Code
 - Git
 
-##Check versions:
-node -v
+## Check versions
+node -v 
 npm -v
 
 ## Database Setup
 ```bash
 CREATE DATABASE item_purchase_db;
 USE item_purchase_db;
+
+## Screenshots
+![Item List](screenshots/01-item-list.png)
+![Add Item](screenshots/02-add-item.png)
+![Create Purchase](screenshots/03-purchase.png)
+![Purchase History](screenshots/04-purchase-history.png)
