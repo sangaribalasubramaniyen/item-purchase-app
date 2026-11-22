@@ -25,20 +25,35 @@
                     div.innerHTML = '';
                     for(let i=0; i<data.length; i++){
                         let item = data[i]
-                        div.innerHTML += '<div class="item-row">' + item.name + ' - Stock: ' + item.stock_available + 
-                        '<button class="btn-small"  onclick="editItem('+ item.id +',\''+item.name +'\',\''+item.purchase_date +'\','+item.stock_available +','+item.item_type_id +')">Edit</button></div>';
+                        let statusText = Number(item.active) === 1 ? 'Active' : 'Inactive';
+let statusClass = Number(item.active) === 1 ? 'active' : 'inactive';
 
+let d = item.purchase_date ? String(item.purchase_date).split('T')[0] : '';
+div.innerHTML += '<div class="item-row">' + item.name + ' - Stock: ' + item.stock_available + 
+' <span><span class="status-badge ' + statusClass + '">' + statusText + '</span>' +
+'<button class="btn-small" data-id="' + item.id + '" data-name="' + item.name + '" data-date="' + d + '" data-stock="' + item.stock_available + '" data-type="' + item.item_type_id + '" data-active="'
+ + item.active + '" onclick="editItemFromBtn(this)">Edit</button></span></div>';
                     }
                     loadPurchaseItems();
                 });
             }
 
-            function editItem(id, name, date, stock, typeId){
+
+
+           function editItemFromBtn(btn){
+              editItem(Number(btn.getAttribute('data-id')), 
+              btn.getAttribute('data-name'), btn.getAttribute('data-date'), 
+              btn.getAttribute('data-stock'), btn.getAttribute('data-type'), 
+              btn.getAttribute('data-active'));
+              }
+
+            function editItem(id, name, date, stock, typeId, active){
                 document.getElementById('addItemBtn').innerText = 'Update Item';
                 document.getElementById('itemName').value=name;
-                document.getElementById('itemDate').value =date.split('T')[0];
+                document.getElementById('itemDate').value = date ? String(date).split('T')[0] : '';
                 document.getElementById('itemStock').value=stock;
                 document.getElementById('itemType').value =typeId;
+                document.getElementById('itemActive').value = active;
                 editingId=id;
                 document.getElementById('deleteBtn').style.display='inline-block';
             }
@@ -49,6 +64,7 @@
                 let date= document.getElementById('itemDate').value;
                 let stock=document.getElementById('itemStock').value;
                 let typeId = document.getElementById('itemType').value;
+                let active = document.getElementById('itemActive').value;
 
                 //validation
                 if(!name || !date || !stock){
@@ -62,22 +78,37 @@
 
                   //Edit function
                 if (editingId !== null){
+                    console.log('PUT sending:', editingId, name, date, stock, typeId, active);
+                    console.log('Editing ID:', editingId);
+                    console.log('Active value:', active);
+                    console.log('Sending data:', {
+                    name: name,
+                    purchase_date: date,
+                    stock_available: stock,
+                    item_type_id: typeId,
+                    active: active
+                    });
                     fetch('http://localhost:5000/api/items/' + editingId,{
                         method:'PUT',
                         headers:{'Content-Type':'application/json'},
-                        body:JSON.stringify({name:name, purchase_date:date, stock_available:stock,item_type_id:typeId})
+                        body:JSON.stringify({name:name, purchase_date:date, 
+                            stock_available:stock,item_type_id:typeId, active:active})
                         
-                    }).then(function(){
+                    }).then(function(res){
+                        return res.json().then(function(data){
+                        if(!res.ok){ alert('FAILED: ' + (data.error || 'Update failed')); console.log('PUT failed:', data); return; }
                         alert('item Updated');
                         editingId=null;
                         document.getElementById('deleteBtn').style.display='none';
                         document.getElementById('itemName').value='';
                         document.getElementById('itemDate').value='';
                         document.getElementById('itemStock').value='';
+                        document.getElementById('itemActive').value = '1';
                         document.getElementById('addItemBtn').innerText='Add Item';
                         document.getElementById('itemType').selectedIndex = 0;
                         loadItems();
                         loadDashboardStats();
+                        });
                     });
                     return
                 }
@@ -86,7 +117,7 @@
                 fetch('http://localhost:5000/api/items',{
                     method:'POST',
                     headers:{'Content-Type': 'application/json'},
-                    body:JSON.stringify({name:name, purchase_date:date, stock_available:stock, item_type_id:typeId})
+                    body:JSON.stringify({name:name, purchase_date:date, stock_available:stock, item_type_id:typeId, active:active})
                 }).then(function(){
                     alert('Item Added');
                     editingId = null;
@@ -94,6 +125,7 @@
                     document.getElementById('itemName').value='';
                     document.getElementById('itemDate').value='';
                     document.getElementById('itemStock').value='';
+                    document.getElementById('itemActive').value = '1';
                     document.getElementById('itemType').selectedIndex = 0;
                     document.getElementById('addItemBtn').innerText = 'Add Item';
                     loadItems()
@@ -144,7 +176,7 @@
                     let select = document.getElementById('purchaseItem');
                     select.innerHTML='';
                     for(let i=0; i<data.length; i++){
-                        if(data[i].active === 1){
+                       if(Number(data[i].active) === 1){
                         let opt = document.createElement('option');
                         opt.value = data[i].id;
                         opt.text=data[i].name;

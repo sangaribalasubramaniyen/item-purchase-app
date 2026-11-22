@@ -429,7 +429,52 @@ html {
     }
 }
 
+/* Items List Row */
+.item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #eef2f7;
+}
 
+.item-row:hover {
+    background: #f8fafc;
+}
+
+/* Status Badge */
+.status-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    color: white;
+}
+
+.status-badge.active {
+    background: #16a34a;
+}
+
+.status-badge.inactive {
+    background: #dc2626;
+}
+
+/* Edit Button - Pudhusha Style */
+.btn-small {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.btn-small:hover {
+    background: #1d4ed8;
+}
 
 
 

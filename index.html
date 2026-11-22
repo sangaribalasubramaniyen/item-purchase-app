@@ -61,9 +61,13 @@
         <h3>ADD/ EDIT ITEM</h3>
         <div class="row">
         <input type="text" id="itemName" placeholder="Item Name">
-        <input type="text" id="itemDate" placeholder="MM/DD/YYYY" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">
+        <input type="date" id="itemDate">
         <input type="number" id="itemStock" placeholder="Stock">
         <select id="itemType"></select>
+        <select id="itemActive">
+       <option value="1">Active</option>
+       <option value="0">Inactive</option>
+       </select>
         </div>
         <br><br>
         <button class="btn-blue" id="addItemBtn" onclick="addItem()">Add Item</button>
@@ -83,7 +87,7 @@
         <h3>New Purchase</h3>
         <div class="row">
         <input type="text" id="orderId" placeholder="Auto Order ID" readonly style="background:#e2e8f0;">
-        <input type="text" id="purchaseDate" placeholder="MM/DD/YYYY" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">
+        <input type="date" id="purchaseDate">
         <select id="purchaseItem"></select>
         <input type="number" id="purchaseQty" placeholder="Qty">
         </div>
