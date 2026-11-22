@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Item Purchase App</title>
+        <style>
+        *{ box-sizing:border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body{ background:#cbd5e1; margin:0; padding:20px; color:#1e293b; }
+        h2{ text-align:center; font-size:28px; margin-bottom:24px; }
+        h2 span{ color:#2563eb; }
+        .container{ max-width:900px; margin:auto; display:flex; flex-direction:column; gap:18px; }
+        .card{ background:#eff6ff; padding:20px; border-radius:16px; box-shadow:0 6px 20px rgba(0,0,0,0.15); border:1px solid #93c5fd; }
+        .card h3{ margin:0 0 14px 0; font-size:18px; border-left:4px solid #2563eb; padding-left:10px; }
+        .row{ display:flex; gap:10px; flex-wrap:wrap; }
+        input, select{ padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; flex:1; min-width:140px; font-size:14px; outline:none; }
+        input:focus, select:focus{ border-color:#2563eb; }
+        button{ padding:10px 18px; border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px; }
+        .btn-blue{ background:#2563eb; color:white; }
+        .btn-blue:hover{ background:#1d4ed8; }
+        .btn-green{ background:#16a34a; color:white; }
+        .btn-green:hover{ background:#15803d; }
+        .btn-small{ padding:5px 10px; font-size:12px; background:#e0e7ff; color:#3730a3; margin-left:8px; }
+        .item-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+        .item-row:last-child{ border:none; }
+        .badge{ background:#dcfce7; color:#166534; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+        .cart-box{ background:white; padding:12px; border-radius:8px; margin:12px 0; min-height:40px; font-size:14px; }
+        .history-row{ padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:14px; }
+        .history-row b{ color:#2563eb; }
+
+        .history-table{ width:100%; border-collapse:collapse; font-size:14px; margin-top:10px; }
+        .history-table th{ background:#2563eb; color:white; padding:10px; text-align:left; }
+        .history-table td{ padding:10px; border-bottom:1px solid #e2e8f0; }
+        .history-table tr:last-child td{ border-bottom:none; }
+
+        #itemsList{ background:white; padding:8px 14px; border-radius:10px; }
+    </style>
+
+    </head>
+
+    <body>
+        <h2>🛒 Item <span>Purchase App</span></h2>
+
+        <div class="container">
+
+            <div class="card">
+        <h3>ADD/ EDIT ITEM</h3>
+        <div class="row">
+        <input type="text" id="itemName" placeholder="Item Name">
+        <input type="text" id="itemDate" placeholder="MM/DD/YYYY" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">
+        <input type="number" id="itemStock" placeholder="Stock">
+        <select id="itemType"></select>
+        </div>
+        <br><br>
+        <button class="btn-blue" id="addItemBtn" onclick="addItem()">Add Item</button>
+        </div>
+
+ <div class="card">
+        <h3>Items List</h3>
+        <div id="itemsList"></div>
+</div>
+
+<div class="card">
+        <h3>New Purchase</h3>
+        <div class="row">
+        <input type="text" id="orderId" placeholder="Auto Order ID" readonly style="background:#e2e8f0;">
+        <input type="text" id="purchaseDate" placeholder="MM/DD/YYYY" onfocus="this.type='date'" onblur="if(!this.value) this.type='text'">
+        <select id="purchaseItem"></select>
+        <input type="number" id="purchaseQty" placeholder="Qty">
+        </div>
+        <br>
+        <button class="btn-blue" onclick="addToPurchase()">Add to Purchase</button>
+
+        <div class="cart-box" id="purchaseList">No items added yet...</div>
+        <button class="btn-green" onclick="savePurchase()">✅ Save Purchase</button>
+        </div>
+   <div class="card">
+        <h3>Purchase History</h3>
+        <div id="purchaseHistory">Click below to view history...</div>
+        <br>
+        <button class="btn-blue" onclick="loadPurchaseHistory()">Show  History</button>
+</div>
+</div>
+        <script>
+            let editingId = null;
+            loadTypes();
+            loadItems();
+
+            function loadTypes(){
+                fetch('http://localhost:5000/api/item-types')
+                .then(function(res){return res.json();})
+                .then(function(data){
+                    let select = document.getElementById('itemType');
+                    for(let i=0; i<data.length; i++){
+                        let opt = document.createElement('option');
+                        opt.value = data[i].id;
+                        opt.text = data[i].type_name;
+                        select.appendChild(opt);
+                    }
+                });
+            }
+
+            function loadItems(){
+                fetch('http://localhost:5000/api/items')
+                .then(function(res){ return res.json();})
+                .then(function(data){
+                    let div = document.getElementById('itemsList');
+                    div.innerHTML = '';
+                    for(let i=0; i<data.length; i++){
+                        let item = data[i]
+                        div.innerHTML += '<div class="item-row">' + item.name + ' - Stock: ' + item.stock_available + 
+                        '<button class="btn-small"  onclick="editItem('+ item.id +',\''+item.name +'\',\''+item.purchase_date +'\','+item.stock_available +','+item.item_type_id +')">Edit</button></div>';
+
+                    }
+                    loadPurchaseItems();
+                });
+            }
+
+            function editItem(id, name, date, stock, typeId){
+                document.getElementById('itemName').value=name;
+                document.getElementById('itemDate').value =date.split('T')[0];
+                document.getElementById('itemStock').value=stock;
+                document.getElementById('itemType').value =typeId;
+                editingId=id;
+                document.getElementById('addItemBtn').innerText='Update Item';
+            }
+
+          
+            function addItem(){
+                let name=document.getElementById('itemName').value;
+                let date= document.getElementById('itemDate').value;
+                let stock=document.getElementById('itemStock').value;
+                let typeId = document.getElementById('itemType').value;
+
+                //validation
+                if(!name || !date || !stock){
+                    alert('Please fill Item Name,Date and Stock!');
+                    return;
+                }
+                if(stock<0){
+                    alert('Stock cannot be negative!');
+                    return;
+                }
+
+                  //Edit function
+                if (editingId !== null){
+                    fetch('http://localhost:5000/api/items/' + editingId,{
+                        method:'PUT',
+                        headers:{'Content-Type':'application/json'},
+                        body:JSON.stringify({name:name, purchase_date:date, stock_available:stock,item_type_id:typeId})
+                        
+                    }).then(function(){
+                        alert('item Updated');
+                        editingId=null;
+                        document.getElementById('itemName').value='';
+                        document.getElementById('itemDate').value='';
+                        document.getElementById('itemStock').value='';
+                        document.getElementById('addItemBtn').innerText='Add Item';
+                        loadItems();
+                    });
+                    return
+                }
+                
+                //Add new item
+                fetch('http://localhost:5000/api/items',{
+                    method:'POST',
+                    headers:{'Content-Type': 'application/json'},
+                    body:JSON.stringify({name:name, purchase_date:date, stock_available:stock, item_type_id:typeId})
+                }).then(function(){
+                    alert('Item Added');
+                    document.getElementById('itemName').value='';
+                    document.getElementById('itemDate').value='';
+                    document.getElementById('itemStock').value='';
+                    loadItems()
+                });
+
+            }
+
+            function generateOrderId(){
+                let num = Math.floor(1000 + Math.random() * 9000);
+                document.getElementById('orderId').value = 'ORD-' + num;
+            }
+                generateOrderId();
+
+
+            let purchaseCart =[];
+
+            function addToPurchase(){
+                let select =document.getElementById('purchaseItem');
+                let itemId =select.value;
+                let itemName=select.options[select.selectedIndex].text;
+                let qty = document.getElementById('purchaseQty').value;
+
+                if(!qty || qty<=0){
+                    alert("Please enter valid qty!");
+                    return;
+                }
+                for(let i=0; i<purchaseCart.length; i++){
+                    if(purchaseCart[i].item_id==itemId){
+                        alert(itemName+'already added!');
+                        return
+                    }
+                }
+                
+                purchaseCart.push({item_id: itemId, quantity:qty});
+                if(purchaseCart.length===1){
+                    document.getElementById('purchaseList').innerHTML='';
+                }
+                document.getElementById('purchaseList').innerHTML += itemName+'-Qty'+qty+'<br>';
+                document.getElementById('purchaseQty').value='';
+
+            }
+
+            function loadPurchaseItems(){
+                fetch('http://localhost:5000/api/items')
+                .then(function(res){ return res.json();})
+                .then(function(data){
+                    let select = document.getElementById('purchaseItem');
+                    select.innerHTML='';
+                    for(let i=0; i<data.length; i++){
+                        let opt = document.createElement('option');
+                        opt.value = data[i].id;
+                        opt.text=data[i].name;
+                        select.appendChild(opt);
+                    }
+                });
+            }
+            loadPurchaseItems()
+
+            function savePurchase(){
+                let orderId=document.getElementById('orderId').value;
+                let date=document.getElementById('purchaseDate').value;
+
+                //validation
+                if(!orderId || !date){
+                    alert('please fill the Order ID and Date!');
+                    return;
+                }
+                if(purchaseCart.length===0){
+                    alert('please add atleast 1 item to purchase!');
+                    return
+                }
+                fetch('http://localhost:5000/api/purchases',{
+                    method:'POST',
+                    headers:{'Content-Type': 'application/json'},
+                    body:JSON.stringify({order_id: orderId, purchase_date: date, items:purchaseCart})
+
+                }).then(function(res){
+                    return res.json().then(function(data){
+                        if(!res.ok){
+                            alert(data.error);
+                            return;
+                        }
+                    
+                    alert('Purchase Saved! Your Order ID is ' + orderId);
+                    generateOrderId();
+                    purchaseCart=[];
+                    document.getElementById('purchaseList').innerHTML='No items added yet...';
+                    document.getElementById('orderId').value='';
+                    document.getElementById('purchaseDate').value='';
+                    loadItems();
+                    loadPurchaseHistory();
+
+                });
+            });
+
+            }
+
+            function loadPurchaseHistory(){
+                fetch('http://localhost:5000/api/purchases')
+                .then(function(res){return res.json();})
+                .then(function(data){
+                let div =document.getElementById('purchaseHistory');
+                div.innerHTML='';
+
+                if(data.length===0){
+                    div.innerHTML='No purchase yet...';
+                    return;
+                }
+
+                let html = '<table class="history-table"><tr><th>Order ID</th><th>Date</th><th>Item</th><th>Type</th><th>Qty</th></tr>';
+                for(let i=0; i<data.length; i++){
+                    html += '<tr><td><b>' + data[i].order_id + '</b></td><td>' + data[i].purchase_date.split('T')[0] + '</td><td>' + data[i].name + '</td><td>' + data[i].type_name + '</td><td>' + data[i].quantity + '</td></tr>';
+                }
+                html += '</table>';
+            div.innerHTML = html;
+    });
+}
+
+           
+
+           
+
+            
+
+
+
+        </script>
+    </body>
+</html>
