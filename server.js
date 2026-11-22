@@ -107,9 +107,11 @@ app.post('/api/purchases', function(req, res){
             let itemId = itemsList[index].item_id;
             let qty=Number(itemsList[index].quantity);
 
-            db.query('SELECT stock_available FROM items WHERE id=?',[itemId],function(err, rows){
+            db.query('SELECT stock_available, active FROM items WHERE id=? FOR UPDATE',[itemId],function(err, rows){
                 if(err){return db.rollback(function(){res.status(500).send({error:'Database error'});});}
-                if(rows.length===0){return db.rollback(function(){res.status(404).send({error:'Item not found'});});}
+                if(rows.length===0 || Number(rows[0].active) !== 1){
+                    return db.rollback(function(){
+                        res.status(404).send({error:'Inactive items cannot be purchased'});});}
                 if(rows[0].stock_available<qty){
                     return db.rollback(function(){res.status(400).send({error:'Insufficient stock. Available:'+rows[0].stock_available});});
                 }
@@ -149,7 +151,12 @@ app.put('/api/items/:id', function(req, res){
 
     if(!name || !name.trim()){return res.status(400).send({error:'Item name is required'});}
     if(!date){return res.status(400).send({error:'Purchase date is required'});}
-    if(stock==undefined||stock===''||stock<0){return res.status(400).send({error:'Stock cannot be negative'});}
+    if(stock==undefined||stock===''||stock<0){
+        return res.status(400).send({error:'Stock cannot be negative'});
+    }
+    if(!typeId){
+    return res.status(400).send({error:'Item type is required'});
+}
 
     let sql="UPDATE items SET name =?, purchase_date =?, stock_available =?, item_type_id=? WHERE id =?";
     db.query(sql,[name, date,stock,typeId, id], function(err, result){
@@ -161,6 +168,59 @@ app.put('/api/items/:id', function(req, res){
     });
 
 });
+
+
+
+
+
+
+
+
+
+  //Delete Item
+  app.delete('/api/items/:id', function(req, res){
+    let id = req.params.id;
+
+    //Check item exists
+    db.query('SELECT * FROM items WHERE id = ?', [id], function(err, result){
+        if(err){
+            res.send(err);
+        }else if(result.length === 0){
+            res.status(404).send({error:'Item not found'});
+        }else{
+
+            //Check item already purchased or not
+            db.query('SELECT * FROM purchase_items WHERE item_id = ?', [id], function(err, result){
+                if(err){
+                    res.send(err);
+                }else if(result.length > 0){
+
+                    //If purchase history exists, make item inactive
+                    db.query('UPDATE items SET active = 0 WHERE id = ?', [id], function(err, result){
+                        if(err){
+                            res.send(err);
+                        }else{
+                            res.send({message:'Item marked as Inactive'});
+                        }
+                    });
+
+                }else{
+
+                    //If no purchase history, delete item
+                    db.query('DELETE FROM items WHERE id = ?', [id], function(err, result){
+                        if(err){
+                            res.send(err);
+                        }else{
+                            res.send({message:'Item Deleted Successfully'});
+                        }
+                    });
+
+                }
+            });
+        }
+    });
+});
+
 
 //Get all purchases with items
 app.get('/api/purchases', function(req, res){
