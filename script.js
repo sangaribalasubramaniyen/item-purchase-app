@@ -65,6 +65,7 @@ div.innerHTML += '<div class="item-row">' + item.name + ' - Stock: ' + item.stoc
                 let stock=document.getElementById('itemStock').value;
                 let typeId = document.getElementById('itemType').value;
                 let active = document.getElementById('itemActive').value;
+                
 
                 //validation
                 if(!name || !date || !stock){
@@ -78,10 +79,14 @@ div.innerHTML += '<div class="item-row">' + item.name + ' - Stock: ' + item.stoc
 
                   //Edit function
                 if (editingId !== null){
-                    console.log('PUT sending:', editingId, name, date, stock, typeId, active);
-                    console.log('Editing ID:', editingId);
-                    console.log('Active value:', active);
-                    console.log('Sending data:', {
+                    let data = {
+                        name: document.getElementById('itemName').value,
+                        purchase_date: document.getElementById('itemDate').value,
+                        stock_available: document.getElementById('itemStock').value,
+                        item_type_id: document.getElementById('itemType').value,
+                        active: document.getElementById('itemActive').value
+                    };
+                    console.log('Sending data:' ,data, {
                     name: name,
                     purchase_date: date,
                     stock_available: stock,

@@ -32,6 +32,7 @@ db.connect(function(err){
 
 //dispaly the item types
 app.get('/api/item-types',function(req,res){
+
     db.query('SELECT * FROM item_types', function(err,result){
         if(err){
             res.send(err);
@@ -56,7 +57,6 @@ app.get('/api/items', function(req,res){
 
 //Add new item
 app.post('/api/items', function(req,res){
-    console.log(req.body);
     let name=req.body.name;
     let date=req.body.purchase_date;
     let stock=req.body.stock_available;
@@ -68,9 +68,15 @@ app.post('/api/items', function(req,res){
         return res.status(400).send(
             {error:'Item name is required'});
     }
-    if(!date){return res.status(400).send({error:'Purchase date is required'});}
-    if(stock===undefined|| stock===''||stock<0){return res.status(400).send({error:'Stock cannot be negative'});}
-    if(!typeId){return res.status(400).send({error:'Item type is required'});}
+    if(!date){
+        return res.status(400).send({error:'Purchase date is required'});
+    }
+    if(stock===undefined|| stock===''||stock<0){
+        return res.status(400).send({error:'Stock cannot be negative'});
+    }
+    if(!typeId){
+        return res.status(400).send({error:'Item type is required'});
+    }
 
     let sql="INSERT INTO items (name, purchase_date, stock_available, item_type_id, active) VALUES(?, ?, ?, ?, ?)";
     db.query(sql, [name, date, stock, typeId, active], function(err, result){
@@ -89,9 +95,15 @@ app.post('/api/purchases', function(req, res){
     let date=req.body.purchase_date;
     let itemsList=req.body.items;
 
-    if(!orderId){ return res.status(400).send({error:'Order ID is required'});}
-    if(!date){ return res.status(400).send({error:'Purchase date is required'});}
-    if(!itemsList || itemsList.length===0){return res.status(400).send({error:'Purchase must contain atleast 1 item'});}
+    if(!orderId){ 
+        return res.status(400).send({error:'Order ID is required'});
+    }
+    if(!date){ 
+        return res.status(400).send({error:'Purchase date is required'});
+    }
+    if(!itemsList || itemsList.length===0){
+        return res.status(400).send({error:'Purchase must contain atleast 1 item'});
+    }
     for(let i=0; i<itemsList.length;i++){
         if(!itemsList[i].quantity || itemsList[i].quantity <=0){
             return res.status(400).send({error:'Quantity must be greater than zero'});
@@ -99,18 +111,24 @@ app.post('/api/purchases', function(req, res){
     }
 
     db.beginTransaction(function(err){
-        if(err){ return res.status(500).send({error:'Transaction failed'});}
+        if(err){ 
+            return res.status(500).send({error:'Transaction failed'});
+        }
 
 
     db.query( "INSERT INTO purchases (order_id, purchase_date) VALUES(?, ?)",[orderId, date],function(err, result){
-        if(err){ return db.rollback(function(){ res.status(400).send({error:err.message});});}
+        if(err){ 
+            return db.rollback(function(){ res.status(400).send({error:err.message});});
+        }
         let purchaseId=result.insertId;
         let index=0;
 
         function processNext(){
             if(index>=itemsList.length){
                 return db.commit(function(err){
-                    if(err){ return db.rollback(function(){res.status(500).send({error:'Commit Failed'});});}
+                    if(err){ 
+                        return db.rollback(function(){res.status(500).send({error:'Commit Failed'});});
+                    }
                     res.send({message:'Purchase Saved'});
                 });
             }
@@ -118,17 +136,24 @@ app.post('/api/purchases', function(req, res){
             let qty=Number(itemsList[index].quantity);
 
             db.query('SELECT stock_available, active FROM items WHERE id=? FOR UPDATE',[itemId],function(err, rows){
-                if(err){return db.rollback(function(){res.status(500).send({error:'Database error'});});}
+                if(err){
+                    return db.rollback(function(){res.status(500).send({error:'Database error'});});
+                }
                 if(rows.length===0 || Number(rows[0].active) !== 1){
                     return db.rollback(function(){
-                        res.status(404).send({error:'Inactive items cannot be purchased'});});}
+                        res.status(404).send({error:'Inactive items cannot be purchased'});});
+                    }
                 if(rows[0].stock_available<qty){
                     return db.rollback(function(){res.status(400).send({error:'Insufficient stock. Available:'+rows[0].stock_available});});
                 }
                 db.query("INSERT INTO purchase_items (purchase_id, item_id, quantity) VALUES (?,?,?)",[purchaseId, itemId, qty], function(err){
-                    if(err){ return db.rollback(function(){res.status(500).send({error:err.message});});}
+                    if(err){ 
+                        return db.rollback(function(){res.status(500).send({error:err.message});});
+                    }
                     db.query("UPDATE items SET stock_available = stock_available -? WHERE id = ?",[qty, itemId], function(err){
-                        if(err){return db.rollback(function(){res.status(500).send({error:err.message});});}
+                        if(err){
+                            return db.rollback(function(){res.status(500).send({error:err.message});});
+                        }
                         index++;
                         processNext();
 
@@ -166,8 +191,7 @@ app.put('/api/items/:id', function(req, res) {
         active = 1;
     }
 
-    console.log('Received ID:', id);
-    console.log('Received Active:', active);
+    
 
     // Validation
     if (!name || !name.trim()) {
@@ -191,11 +215,11 @@ app.put('/api/items/:id', function(req, res) {
     db.query(sql, [name, date, stock, typeId, active, id], function(err, result) {
 
         if (err) {
-            console.log('PUT ERROR:', err.message);
+           
             return res.status(500).send({error: err.message});
         }
 
-        console.log('Rows updated:', result.affectedRows);
+       
 
         if (result.affectedRows === 0) {
             return res.status(404).send({error: 'Item ID not found: ' + id});
@@ -208,7 +232,7 @@ app.put('/api/items/:id', function(req, res) {
                 return res.status(500).send({error: err.message});
             }
 
-            console.log('Updated database value:', rows);
+            
 
             res.send({
                 message: 'Item Updated',
